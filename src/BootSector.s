@@ -44,13 +44,16 @@ LoadStageTwo:
 	#Empty for now. 
 
 
-#Right now it does nothing apparently :(. 
 ClearScreen: 
 	pusha 
-	movw $0x600, %ax 
 	movw $0, %cx 
-	movw 0x184F, %dx 
-	movb $0x07, %bh 
+	movw $0x0700, %ax 
+	movb $0x0F, %bh 
+	movw $0x184F, %dx 
+	DoInterrupt 0x10 
+	movb $0, %bh 
+	movw $0, %dx 
+	movb $0x02, %ah 
 	DoInterrupt 0x10 
 	popa 
 	ret   
@@ -87,7 +90,7 @@ FirstMessage:
 	.byte 0 
 	
 LoadedMessage: 
-	.ascii "Stage two loaded." 
+	.ascii "Stage two loaded."     
 	.byte 0 
 	
 	
