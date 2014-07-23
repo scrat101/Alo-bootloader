@@ -7,6 +7,15 @@
 	popa  
 .endm 
 
+.macro FunctionEntry 
+	pusha 
+	movw %sp, %bp 
+	add $18, %bp 
+.endm 
+
+.macro FunctionExit 
+	popa 
+.endm 
  
 movw $0x7C0, %ax 
 movw %ax, %ds 
@@ -26,72 +35,51 @@ thestart:
 	pushw $LoadedMessage 
 	call PrintString 
 	add $2, %sp #Stack cleanup..................                  
-	#jmp $0x301 #Transfer control to stage two 
-	pushw $0x48 
-	call PrintHex 
-	add $2, %sp 
+	#jmp $0x401 #Transfer control to stage two 
 	jmp .ANotEndingLoop 
 	.ANotEndingLoop:           
 		jmp .ANotEndingLoop 
 		
 LoadStageTwo: 
+	#Empty for now. 
 
 
-
+#Right now it does nothing apparently :(. 
 ClearScreen: 
+	pusha 
 	movw $0x600, %ax 
 	movw $0, %cx 
 	movw 0x184F, %dx 
 	movb $0x07, %bh 
 	DoInterrupt 0x10 
+	popa 
 	ret   
 	
 PrintChar: 
-	movw %sp, %bx 
-	movb 2(%bx), %al  
+	FunctionEntry 
+	movb (%bp), %al  
 	mov $0xE, %ah 
 	DoInterrupt 0x10 
+	FunctionExit 
 	ret 
 	
 PrintString: 
-	movw %sp, %bp 
-	xor %bx, %bx 
-	movb 2(%bp), %bl 
+	FunctionEntry 
+	movw (%bp), %bx 
 	jmp .MainLoop 
 	.MainLoop: 
 		movb (%bx), %al 
 		cmp $0, %al  
 		je .printdone 
-		pushw %bx 
 		pushw %ax 
 		call PrintChar 
 		add  $2, %sp 
-		popw %bx 
 		add $1, %bx 
 		jmp .MainLoop 		
 	.printdone: 
+		FunctionExit 
 		ret 
 		
-PrintHex: 		
-	movw $HexIndexStr, %si  
-	movw %sp, %bp 
-	xor %bx, %bx 
-	movw 2(%bp), %ax 
-	movw $4, %cx 
-	jmp .MainLoo 
-	.MainLoo: 
-		cmp $0, %cx 
-		je .theen 
-		rol $4, %ax 
-		movb %al, %bl  
-		and $0xF, %bl     
-		movb (%bx, %si), %bl          
-		pushw %bx 
-		call PrintChar 
-		dec %cx 
-	.theen: 
-		ret 
-	
 		
 FirstMessage: 
 	.ascii "Hello bootloader world!\r\n" 
@@ -102,8 +90,6 @@ LoadedMessage:
 	.ascii "Stage two loaded." 
 	.byte 0 
 	
-HexIndexStr: 
-	.ascii "0123456789ABCDEF" 
 	
 	
 .org 510 	
